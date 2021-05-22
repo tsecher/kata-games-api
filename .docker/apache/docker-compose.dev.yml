@@ -1,0 +1,46 @@
+version: "3.3"
+
+services:
+
+    # WEBSERVER APACHE
+    server:
+        container_name: ${COMPOSE_PROJECT_NAME}_server
+        build:
+            context: ../../
+            dockerfile: .docker/apache/apache/Dockerfile
+            args:
+                - WEB_USER=${WEB_USER}
+                - WEB_GROUP=${WEB_GROUP}
+                - DOCKER_LOCAL_PATH=${DOCKER_LOCAL_PATH}
+                - APACHE_LOG_DIR=${APACHE_LOG_DIR}
+                - APACHE_ROOT_DIR=${APACHE_ROOT_DIR}
+        volumes:
+            - ../../${APP_DIR}:/var/www/${APP_DIR}
+            - ../../${DATA_DIR}:/var/www/${DATA_DIR}
+        environment:
+            - APP_DIR=${APP_DIR}
+            - MYSQL_HOST=${MYSQL_HOST}
+            - MYSQL_PORT_EXTERNAL=${MYSQL_PORT_EXTERNAL}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+        networks:
+            - traefik-net
+            - mariadb
+        restart: on-failure
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-net
+            - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${SITE_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=${TRAEFIK_ENTRYPOINT:-http}
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=redirect@file
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}s.rule=Host(`${SITE_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}s.entrypoints=${TRAEFIK_ENTRYPOINT:-https}
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}s.tls=true
+
+networks:
+    mariadb:
+        external: true
+    traefik-net:
+        external: true

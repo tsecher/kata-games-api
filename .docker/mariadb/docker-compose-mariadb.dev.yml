@@ -1,0 +1,30 @@
+version: "3.3"
+
+services:
+
+    # DATABASE ENGINE : MYSQL
+    mariadb:
+        container_name: ${COMPOSE_PROJECT_NAME}_mariadb
+        build:
+            context: ./
+            dockerfile: ./mysql/Dockerfile
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        ports:
+            - ${MYSQL_PORT_EXTERNAL:-3306}:3306
+        labels:
+            - traefik.enable=false
+        restart: on-failure
+        networks:
+            - mariadb
+        volumes:
+            - ../../${DATA_DIR}:/var/www/${DATA_DIR}
+
+volumes:
+    database: { }
+networks:
+    mariadb:
+        external: true

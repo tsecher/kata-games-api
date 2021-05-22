@@ -1,0 +1,25 @@
+version: "3.3"
+
+services:
+
+    adminer:
+        container_name: ${COMPOSE_PROJECT_NAME}_adminer
+        image: adminer
+        environment:
+            ADMINER_DEFAULT_DB_HOST: ${MYSQL_HOST:-mariadb}
+            ADMINER_DEFAULT_DB_NAME: ${MYSQL_DATABASE}
+        networks:
+            - traefik-net
+            - mariadb
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-net
+            - traefik.http.services.${COMPOSE_PROJECT_NAME}_adminer.loadbalancer.server.port=8080
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}_adminer.rule=Host(`adminer.${COMPOSE_PROJECT_NAME}.localhost`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}_adminer.entrypoints=${TRAEFIK_ENTRYPOINT:-http}
+
+networks:
+    mariadb:
+        external: true
+    traefik-net:
+        external: true

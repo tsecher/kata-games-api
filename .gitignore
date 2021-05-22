@@ -1,0 +1,5 @@
+
+# Dev
+.DS_Store
+.idea/
+/.env

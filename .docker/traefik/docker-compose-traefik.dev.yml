@@ -1,0 +1,54 @@
+version: "3.7"
+
+services:
+
+  traefik:
+    container_name: ${COMPOSE_PROJECT_NAME}_traefik
+    image: traefik:2.2
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # On map la conf statique dans le conteneur
+      - ./docker/traefik.toml:/etc/traefik/traefik.toml:ro
+      # On map la conf dynamique statique dans le conteneur
+      - ./docker/traefik.config.toml:/etc/traefik/traefik.config.toml:ro
+      # On map les certificats dans le conteneur
+      - ./docker/certs:/etc/certs:ro
+    command:
+      # GLOBAL
+      - --global.checknewversion=true
+      # API / Dashboard
+      - --api=true
+      - --api.dashboard=true
+      # Entrypoint
+      - --entrypoints.http.address=:80
+      - --entrypoints.ftp.address=:2202
+      # Logs
+      - --accesslog=true
+      # Providers
+      - --providers.docker=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.useBindPortIP=true
+      - --providers.docker.network=traefik-net
+    ports:
+      - "80:80"
+      - "443:443"
+      # L'interface web (activé par --api.insecure=true)
+      - "8080:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "4m"
+        max-file: "20"
+    networks:
+      - traefik-net
+    restart: unless-stopped
+    labels:
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.services.traefik-api.loadbalancer.server.port=8080"
+      # Dashboard https configuration
+      - "traefik.http.routers.dashboard-secured.rule=Host(`${TRAEFIK_URL:-traefik.localhost}`)"
+      - "traefik.http.routers.dashboard-secured.service=api@internal"
+
+networks:
+  traefik-net:
+    external: true
